@@ -375,4 +375,364 @@
 
     <div class="control-strip">
         <label for="apiBase">API</label>
-        <input id="apiBase" class="api-field" value=""
+        <input id="apiBase" class="api-field" value="http://localhost:8000" spellcheck="false" />
+        <button id="dispatchBtn" class="dispatch-btn">Dispatch saved clips</button>
+        <div id="statusReadout" class="status-readout">not connected</div>
+    </div>
+
+    <div class="control-strip quick">
+        <label for="quickUrl">URL test</label>
+        <input id="quickUrl" class="api-field wide" placeholder="Paste a youtube URL please" spellcheck="false" />
+        <button id="quickBtn" class="dispatch-btn quick">Run</button>
+    </div>
+
+    <div id="connError" class="conn-error" style="display: none;"></div>
+    <div id="quickError" class="quick-error" style="display:none;"></div>
+
+    <main id="main">
+  <div class="section-title">Quick test <span>runs immediately, be patient</span></div>
+  <div id="adhocList"></div>
+  <div id="adhocEmpty" class="empty small">Paste The link ABOVE! and the magic will appear</div>
+
+  <div class="section-title">Batch <span>from tasks.json — the set graded</span></div>
+  <div id="batchList"></div>
+  <div id="batchEmpty" class="empty"><div class="big">No wire yet</div><div>Set the API address above and this board will pull in tasks.json automatically.</div></div>
+</main>
+
+<footer>IDK WHAT EVEN I DO HERE</footer>
+
+<script>
+const persontype = {
+  formal:             { name: "The Naturalist", tag: "national geography narrator" },
+  sarcastic:          { name: "The Critic",      tag: "politician in debate" },
+  humorous_tech:      { name: "The Debugger",    tag: "Beep Boop" },
+  humorous_non_tech:  { name: "The Relative",    tag: "dad? maybe siblings" },
+};
+function personaFor(style){
+  return persontype[style] || { name: style.replace(/_/g,' '), tag: "" };
+}
+
+const STAGE_ORDER = [
+  { key:"queued",             label:"Queued" },
+  { key:"downloading",        label:"Download" },
+  { key:"extracting_frames",  label:"Frames" },
+  { key:"describing",         label:"thinkin" },
+  { key:"drafting_opinions",  label:"first shot" },
+  { key:"reconciling",        label:"Reconcile" },
+  { key:"judging",            label:"grading" },
+  { key:"regenerating",       label:"Bad Grade" },
+  { key:"done",                label:"Finished" },
+];
+
+const STAGE_ALIAS = { described:"describing", judged:"judging", transcribing:"extracting_frames" };
+function stageIndex(stage){
+  if(!stage) return -1;
+  const key = STAGE_ALIAS[stage] || stage;
+  return STAGE_ORDER.findIndex(s => s.key === key);
+}
+
+let judgeThreshold = 0.7;
+let polling = null;
+let batchOrder = []; 
+let adhocOrder = []; 
+
+const apiInput = document.getElementById('apiBase');
+const dispatchBtn = document.getElementById('dispatchBtn');
+const quickUrlInput = document.getElementById('quickUrl');
+const quickBtn = document.getElementById('quickBtn');
+const quickError = document.getElementById('quickError');
+const statusReadout = document.getElementById('statusReadout');
+const connError = document.getElementById('connError');
+const batchListEl = document.getElementById('batchList');
+const batchEmptyEl = document.getElementById('batchEmpty');
+const adhocListEl = document.getElementById('adhocList');
+const adhocEmptyEl = document.getElementById('adhocEmpty');
+const liveLine = document.getElementById('liveLine');
+
+function apiBase(){ return apiInput.value.replace(/\/+$/,''); }
+
+function fmtClock(){
+  const d = new Date();
+  document.getElementById('clockLine').textContent =
+    d.toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'}).toUpperCase() + ' ' + d.toLocaleTimeString(undefined,{hour12:false});
+}
+setInterval(fmtClock, 1000);
+fmtClock();
+
+async function apiGet(path){
+  const res = await fetch(apiBase() + path);
+  if(!res.ok) throw new Error(path + ' -> ' + res.status);
+  return res.json();
+}
+async function apiPost(path, body){
+  const opts = { method:'POST' };
+  if(body !== undefined){
+    opts.headers = { 'Content-Type': 'application/json' };
+    opts.body = JSON.stringify(body);
+  }
+  const res = await fetch(apiBase() + path, opts);
+  if(!res.ok){
+    const errBody = await res.json().catch(()=>({}));
+    throw new Error(errBody.detail || (path + ' -> ' + res.status));
+  }
+  return res.json();
+}
+
+function youTubeVideoId(url){
+  try{
+    const u = new URL(url);
+    if(u.hostname.includes('youtu.be')) return u.pathname.slice(1);
+    if(u.hostname.includes('youtube.com')){
+      if(u.searchParams.get('v')) return u.searchParams.get('v');
+      const m = u.pathname.match(/\/embed\/([^/?]+)/);
+      if(m) return m[1];
+    }
+  }catch(e){}
+  return null;
+}
+
+async function loadTasksAndConfig(){
+  try{
+    const [tasks, config] = await Promise.all([apiGet('/tasks'), apiGet('/config')]);
+    connError.style.display = 'none';
+    judgeThreshold = config.judge_threshold;
+    dispatchBtn.disabled = false;
+    quickBtn.disabled = false;
+    batchOrder = tasks.map(t => t.task_id);
+    renderBatchIdle(tasks);
+    refreshStatus();
+  }catch(e){
+    connError.style.display = 'block';
+    connError.textContent = "Can't reach the API at " + apiBase() +
+      " — is `uvicorn api:app --port 8000` running? (" + e.message + ")";
+    dispatchBtn.disabled = true;
+    quickBtn.disabled = true;
+  }
+}
+
+function renderBatchIdle(tasks){
+  if(!tasks.length){
+    batchEmptyEl.style.display = 'block';
+    batchListEl.innerHTML = '';
+    return;
+  }
+  batchEmptyEl.style.display = 'none';
+  batchListEl.innerHTML = tasks.map((t,i) => dispatchShell(t.task_id, i, false)).join('');
+  tasks.forEach(t => fillDispatch(t.task_id, {
+    video_url:t.video_url, styles:t.styles, status:'idle', stage:null,
+    captions:{}, judge_scores:null, description:null, source:null,
+  }));
+}
+
+function dispatchShell(taskId, i, adhoc){
+  const label = adhoc
+    ? `Quick Test <span>No:${String(i+1).padStart(2,'0')}</span>`
+    : `Dispatch <span>No:${String(i+1).padStart(3,'0')}</span> · ${taskId}`;
+  return `
+    <div class="dispatch${adhoc ? ' adhoc' : ''}" id="d-${taskId}">
+      <div class="dispatch-head">
+        <div class="dispatch-no">${label}<span class="src-badge" id="src-${taskId}"></span></div>
+        <div class="ticker" id="ticker-${taskId}"></div>
+      </div>
+      <div class="dispatch-body">
+        <div class="preview" id="preview-${taskId}"></div>
+        <div class="report" id="report-${taskId}"></div>
+      </div>
+      <div class="bylines" id="bylines-${taskId}"></div>
+    </div>`;
+}
+
+function renderTicker(taskId, stage, status){
+  const el = document.getElementById('ticker-' + taskId);
+  if(!el) return;
+  const idx = stageIndex(stage);
+  el.innerHTML = STAGE_ORDER.map((s, i) => {
+    let cls = 'tick';
+    if(status === 'error' && i === idx) cls += ' error';
+    else if(i < idx || (i === idx && stage === 'done')) cls += ' filled';
+    else if(i === idx) cls += ' active';
+    return `<span class="${cls}"><span class="tick-dot"></span>${s.label}</span>`;
+  }).join('');
+}
+
+function fillDispatch(taskId, info){
+  const previewEl = document.getElementById('preview-' + taskId);
+  if(previewEl && !previewEl.dataset.filled){
+    const ytId = youTubeVideoId(info.video_url || '');
+    previewEl.innerHTML = ytId
+      ? `<iframe src="https://www.youtube.com/embed/${ytId}" title="preview" allowfullscreen></iframe>`
+      : `<video controls preload="metadata" src="${info.video_url || ''}"></video>`;
+    previewEl.dataset.filled = '1';
+  }
+
+  const srcEl = document.getElementById('src-' + taskId);
+  if(srcEl && info.source){
+    srcEl.textContent = info.source === 'yt-dlp' ? '· via magic library' : '· direct link';
+  }
+
+  renderTicker(taskId, info.stage, info.status);
+
+  const reportEl = document.getElementById('report-' + taskId);
+  if(info.status === 'error'){
+    reportEl.className = 'report';
+    reportEl.innerHTML = `<span class="label">Wire report</span><span class="err-block">Failed: ${escapeHtml(info.error||'unknown error')}</span>`;
+  }else if(info.description){
+    reportEl.className = 'report';
+    reportEl.innerHTML = `<span class="label">Wire report — ground truth</span>${escapeHtml(info.description)}`;
+  }else{
+    reportEl.className = 'report pending';
+    reportEl.textContent = info.status === 'idle' ? 'Awaiting dispatch…' : 'BEEP BOOP';
+  }
+
+  const styles = info.styles && info.styles.length ? info.styles : Object.keys(persontype);
+  const bylinesEl = document.getElementById('bylines-' + taskId);
+  bylinesEl.innerHTML = styles.map(style => bylineCard(taskId, style, info)).join('');
+}
+
+function bylineCard(taskId, style, info){
+  const persona = personaFor(style);
+  const caption = (info.captions && info.captions[style]) || '';
+  const scores = info.judge_scores && info.judge_scores[style];
+  const capId = `cap-${taskId}-${style}`;
+  let stampHtml = '';
+  if(scores){
+    const min = Math.min(scores.accuracy, scores.style_match);
+    const passed = min >= judgeThreshold;
+    stampHtml = `<div class="stamp ${passed ? 'approved' : 'revised'}">${passed ? 'Approved' : 'Revised'}</div>`;
+  }
+  const scoreLine = scores
+    ? `acc ${scores.accuracy.toFixed(2)} · style ${scores.style_match.toFixed(2)}`
+    : '';
+  return `
+    <div class="byline-card">
+      ${stampHtml}
+      <div class="byline-name">${escapeHtml(persona.name)}</div>
+      <span class="byline-tag">${escapeHtml(persona.tag)}</span>
+      <div class="byline-caption ${caption ? '' : 'empty'}" id="${capId}">${caption ? escapeHtml(caption) : 'tidin tidin process in progress'}</div>
+      <div class="card-footer">
+        <div class="scores">${scoreLine}</div>
+        <button class="copy-btn" onclick="copyCaption('${capId}', this)" ${caption ? '' : 'disabled'}>Copy</button>
+      </div>
+    </div>`;
+}
+
+function copyText(text){
+  if(navigator.clipboard && window.isSecureContext){
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise((resolve) => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); }catch(e){}
+    document.body.removeChild(ta);
+    resolve();
+  });
+}
+function copyCaption(elId, btn){
+  const el = document.getElementById(elId);
+  if(!el || !el.textContent) return;
+  copyText(el.textContent).then(() => {
+    const original = btn.textContent;
+    btn.textContent = 'Copied';
+    setTimeout(() => { btn.textContent = original; }, 1200);
+  });
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+async function refreshStatus(){
+  try{
+    const st = await apiGet('/status');
+    connError.style.display = 'none';
+    const ids = Object.keys(st.tasks);
+    const batchIds = ids.filter(id => !st.tasks[id].adhoc);
+    const adhocIds = ids.filter(id => st.tasks[id].adhoc);
+    const doneCount = arr => arr.filter(id => ['done','error'].includes(st.tasks[id].status)).length;
+
+    if(st.status === 'running'){
+      liveLine.innerHTML = '<span class="live"><span class="live-dot"></span>LIVE</span>';
+      dispatchBtn.disabled = true;
+      statusReadout.innerHTML = `<b>${doneCount(batchIds)}/${batchIds.length}</b> batch · <b>${doneCount(adhocIds)}/${adhocIds.length}</b> quick`;
+    }else{
+      liveLine.textContent = '';
+      dispatchBtn.disabled = false;
+      statusReadout.innerHTML = ids.length ? `<b>${doneCount(batchIds)}/${batchIds.length}</b> batch · <b>${doneCount(adhocIds)}/${adhocIds.length}</b> quick` : 'not connected';
+    }
+
+    batchIds.forEach(id => {
+      if(!document.getElementById('d-' + id)){
+        batchEmptyEl.style.display = 'none';
+        batchListEl.insertAdjacentHTML('beforeend', dispatchShell(id, batchOrder.indexOf(id), false));
+      }
+      fillDispatch(id, st.tasks[id]);
+    });
+
+    adhocIds.forEach(id => {
+      if(!adhocOrder.includes(id)) adhocOrder.push(id);
+      if(!document.getElementById('d-' + id)){
+        adhocEmptyEl.style.display = 'none';
+        adhocListEl.insertAdjacentHTML('afterbegin', dispatchShell(id, adhocOrder.indexOf(id), true));
+      }
+      fillDispatch(id, st.tasks[id]);
+    });
+
+    if(st.status === 'running' && !polling){
+      polling = setInterval(refreshStatus, 1500);
+    }else if(st.status !== 'running' && polling){
+      clearInterval(polling);
+      polling = null;
+    }
+  }catch(e){
+  }
+}
+
+dispatchBtn.addEventListener('click', async () => {
+  dispatchBtn.disabled = true;
+  try{
+    await apiPost('/run');
+    refreshStatus();
+    if(!polling) polling = setInterval(refreshStatus, 1500);
+  }catch(e){
+    connError.style.display = 'block';
+    connError.textContent = 'Could not start a run: ' + e.message;
+    dispatchBtn.disabled = false;
+  }
+});
+
+quickBtn.addEventListener('click', async () => {
+  const url = quickUrlInput.value.trim();
+  quickError.style.display = 'none';
+  if(!url){
+    quickError.style.display = 'block';
+    quickError.textContent = 'Paste a video URL first.';
+    return;
+  }
+  quickBtn.disabled = true;
+  try{
+    await apiPost('/run_url', { video_url: url });
+    quickUrlInput.value = '';
+    refreshStatus();
+    if(!polling) polling = setInterval(refreshStatus, 1500);
+  }catch(e){
+    quickError.style.display = 'block';
+    quickError.textContent = 'Could not start: ' + e.message;
+  }finally{
+    quickBtn.disabled = false;
+  }
+});
+quickUrlInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') quickBtn.click(); });
+
+apiInput.addEventListener('change', loadTasksAndConfig);
+
+loadTasksAndConfig();
+</script>
+</body>
+</html>
