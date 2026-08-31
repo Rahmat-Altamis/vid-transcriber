@@ -1,9 +1,17 @@
 import os
 import time
 import requests
+import json
+import json
+from pathlib import Path
 
-HACKCLUB_API_KEY = os.environ.get("HACKCLUB_API_KEY", "")
-HACKCLUB_BASE_URL = os.environ.get("HACKCLUB_BASE_URL", "https://ai.hackclub.com/proxy/v1")
+BASE_DIR = Path(__file__).resolve().parent
+
+with open(BASE_DIR / "config.json", "r", encoding="utf-8") as f:
+    config = json.load(f)
+
+HACKCLUB_API_KEY = config["required"]["HACKCLUB_API_KEY"]
+HACKCLUB_BASE_URL = config["hackclub"]["base_url"]
 REQUEST_TIMEOUT = 25
 MAX_RETRIES = 3
 

@@ -1,0 +1,46 @@
+{
+  "name": "captioner-app",
+  "version": "1.0.0",
+  "description": "Video Captioning Agent desktop app",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^44.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.captioner.app",
+    "productName": "Captioner",
+    "directories": {
+      "output": "release"
+    },
+   "files": [
+    "main.js",
+    "preload.js",
+    "index.html",
+    "package.json"
+    ],
+    "extraResources": [
+  {
+    "from": "backend",
+    "to": "backend"
+  },
+  {
+    "from": "ffmpeg",
+    "to": "ffmpeg"
+  }
+],
+    "win": {
+  "target": "nsis"
+},
+"nsis": {
+  "oneClick": false,
+  "allowToChangeInstallationDirectory": true
+}
+
+  }
+}

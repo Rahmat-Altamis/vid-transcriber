@@ -1,0 +1,30 @@
+{
+  "required": {
+    "GROQ_API_KEY": "",
+    "HACKCLUB_API_KEY": ""
+  },
+  "groq": {
+    "base_url": "https://api.groq.com/openai/v1",
+    "whisper_model": "whisper-large-v3",
+    "text_model": "hackclub:openai/gpt-5.5",
+    "judge_fallback_model": "hackclub:xiaomi/mimo-v2.5",
+    "judge_threshold": 0.7
+  },
+  "hackclub": {
+    "base_url": "https://ai.hackclub.com/proxy/v1",
+    "vision_model": "hackclub:anthropic/claude-opus-4.8",
+    "fallback_base_url": "https://ai.hackclub.com/proxy/v1"
+  },
+  "pipeline": {
+    "min_frames": 6,
+    "max_frames": 14,
+    "frame_every_sec": 8,
+    "max_vision_images": 14,
+    "use_audio": true,
+    "max_parallel_videos": 4
+  },
+  "paths": {
+    "input_path": "./input/tasks.json",
+    "output_path": "./output/results.json"
+  }
+}

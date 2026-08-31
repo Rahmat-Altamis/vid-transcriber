@@ -21,19 +21,22 @@ def _tool_path(name):
             return candidate
     return name
 
-MIN_FRAMES = int(os.environ.get('MIN_FRAMES', '6'))
-MAX_FRAMES = int(os.environ.get('MAX_FRAMES', '14'))
-FRAME_EVERY_SEC = float(os.environ.get('FRAME_EVERY_SEC', '8'))
-MAX_VISION_IMAGES = int(os.environ.get("MAX_VISION_IMAGES", "14"))
+with open("config.json", "r", encoding="utf-8") as f:
+    config = json.load(f)
 
-USE_AUDIO = os.environ.get("USE_AUDIO", "true").lower() == "true"
-VISION_MODEL_SPEC = os.environ.get("VISION_MODEL", "hackclub:anthropic/claude-opus-4.8")
-TEXT_MODEL_SPEC = os.environ.get("TEXT_MODEL", "hackclub:openai/gpt-5.5")
-OPINION_MODEL_SPECS = os.environ.get("OPINION_MODELS", TEXT_MODEL_SPEC).split(",")
-REASONING_MODEL_SPEC = os.environ.get("REASONING_MODEL", TEXT_MODEL_SPEC)
-JUDGE_MODEL_SPEC = os.environ.get("JUDGE_MODEL", TEXT_MODEL_SPEC)
-JUDGE_FALLBACK_MODEL_SPEC = os.environ.get("JUDGE_FALLBACK_MODEL", "hackclub:xiaomi/mimo-v2.5")
-JUDGE_THRESHOLD = float(os.environ.get("JUDGE_THRESHOLD", "0.7"))
+MIN_FRAMES = config["pipeline"]["min_frames"]
+MAX_FRAMES = config["pipeline"]["max_frames"]
+FRAME_EVERY_SEC = config["pipeline"]["frame_every_sec"]
+MAX_VISION_IMAGES = config["pipeline"]["max_vision_images"]
+USE_AUDIO = config["pipeline"]["use_audio"]
+
+VISION_MODEL_SPEC = config["hackclub"]["vision_model"]
+TEXT_MODEL_SPEC = config["groq"]["text_model"]
+OPINION_MODEL_SPECS = config["hackclub"]["vision_model"].split(",")
+REASONING_MODEL_SPEC = config["hackclub"]["vision_model"]
+JUDGE_MODEL_SPEC = config["groq"]["text_model"]
+JUDGE_FALLBACK_MODEL_SPEC = config["groq"]["judge_fallback_model"]
+JUDGE_THRESHOLD = config["groq"]["judge_threshold"]
 
 STYLE_DESCRIPTIONS = {
     "formal": (

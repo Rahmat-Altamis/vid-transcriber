@@ -2,19 +2,10 @@
   {
     "task_id": "example-1",
     "captions": {
-      "formal": "During a rain-affected Formula 1 race at the Brazilian Grand Prix, cars travel on a wet circuit with heavy spray and reduced visibility. Onboard footage identifies Max Verstappen gaining positions, while team radio instructs him to stay out and drive carefully. A damaged car prompts a red flag, and later Red Bull team members are shown celebrating in the paddock area.",
-      "sarcastic": "At the Brazilian Grand Prix, the track has apparently decided to become a shallow river, so the Formula 1 cars proceed through spray and low visibility with admirable stubbornness. Max Verstappen gains places while the radio calmly asks him to be careful, a bold suggestion given all the water. A crash brings out the red flag, and Red Bull later celebrates making it through the weather experiment.",
-      "humorous_tech": "The Brazilian Grand Prix is running in full wet-weather mode: visibility has timed out, spray is flooding the UI, and Max Verstappen is climbing the position stack from the onboard feed. Race control hits the red-flag interrupt after a damaged car meets the barrier, and later the Red Bull garage celebrates like the production deploy somehow survived the storm.",
-      "humorous_non_tech": "Oh goodness, it is absolutely pouring at the race in Brazil, and the cars are splashing around like very expensive ducks. Max Verstappen moves up through the pack while everyone tells him to be extra careful, then a crash brings out the red flag. By the end, the Red Bull team is hugging and cheering like the whole family just won a rainy-day board game."
-    }
-  },
-  {
-    "task_id": "example-2",
-    "captions": {
-      "formal": "At the Formula 1 São Paulo Grand Prix podium ceremony, the Red Bull driver marked with “MAX” and the Dutch flag stands on the top step after finishing first. Other drivers, including one in an Alpine BWT suit, occupy adjacent podium positions as Formula 1, Lenovo, Rolex, Pirelli, and FIA branding frame the presentation.",
-      "sarcastic": "Here is the São Paulo podium, where the Red Bull driver labeled “MAX” has taken the highest step, apparently because winning still requires standing slightly above everyone else. The flags, logos, Ferrari Trento bottle, and fellow drivers are all present, performing their duties with the practiced seriousness of a ceremony that has done this many, many times.",
-      "humorous_tech": "Post-race deployment successful: the Red Bull driver tagged “MAX” has been promoted to the top podium environment at the São Paulo Grand Prix. Adjacent driver modules are loaded on lower tiers, the Dutch flag renders correctly, Ferrari Trento is queued for celebration, and the branding layer is running at full sponsorship capacity.",
-      "humorous_non_tech": "Look at him up there on the big winner step in São Paulo, smiling with all those fancy racing logos around him! The other drivers are standing nearby, the bottle is ready for celebrating, and even the crowd gets a little moment to look up like proud relatives at a school awards day."
+      "formal": "Following the São Paulo Grand Prix, a driver in Oracle Red Bull Racing attire stands upon the top step of the podium, marking a first-place finish. The Dutch flag is displayed on the screen behind him as the national anthem is presented, while two additional drivers occupy the adjacent steps. A champagne bottle rests at the winner's feet as spectators observe the ceremony.",
+      "sarcastic": "Oh look, another man in a fireproof onesie standing slightly higher than two other men in onesies. They played an anthem, waved a flag, and set a bottle by his feet like a participation trophy. Truly, the pinnacle of human achievement — standing still on a box while a crowd stares upward. He even manages a little smile, as if surprised the box held.",
+      "humorous_tech": "Deployment successful: the driver reached the top of the podium stack with zero rollbacks. The Dutch flag rendered on the background display with no latency, right on schedule with the anthem's audio thread. Champagne bottle staged at his feet, awaiting the trigger for the celebration function to execute. He's even smiling now — looks like the reward logic finally fired.",
+      "humorous_non_tech": "Oh my goodness, look at him up there on the tallest little step, he WON, he actually won! There's the flag on the big screen and everyone's watching and there's even a fancy bottle by his feet, so exciting! Look at that big smile, I'm so proud even though I don't really know him!"
     }
   }
 ]

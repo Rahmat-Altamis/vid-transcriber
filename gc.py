@@ -1,11 +1,14 @@
 import os
 import time
 import requests
+import json
 
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-GROQ_BASE_URL = os.environ.get("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
-GROQ_WHISPER_MODEL = os.environ.get("GROQ_WHISPER_MODEL", "whisper-large-v3")
+with open("config.json", "r", encoding="utf-8") as f:
+    config = json.load(f)
 
+GROQ_API_KEY = config["required"]["GROQ_API_KEY"]
+GROQ_BASE_URL = config["groq"]["base_url"]
+GROQ_WHISPER_MODEL = config["groq"]["whisper_model"]
 REQUEST_TIMEOUT = 25
 MAX_RETRIES = 3
 

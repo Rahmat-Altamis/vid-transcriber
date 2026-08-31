@@ -1,10 +1,11 @@
 import os, sys
 from pathlib import Path
+import json
 
-from dotenv import load_dotenv
+with open("config.json", "r", encoding="utf-8") as f:
+    config = json.load(f)
 
 BASE_DIR = Path(sys.executable).parent if getattr(sys, "frozen", False) else Path(__file__).parent
-load_dotenv(BASE_DIR / '.env')
 
 import json
 import tempfile
@@ -42,7 +43,7 @@ def _resolve(env_var, default):
 
 TASKS_PATH = _resolve("INPUT_PATH", "input/tasks.json")
 RESULTS_PATH = _resolve("OUTPUT_PATH", "output/results.json")
-MAX_PARALLEL_VIDEOS = int(os.environ.get("MAX_PARALLEL_VIDEOS", "4"))
+MAX_PARALLEL_VIDEOS = int(config["pipeline"]["max_parallel_videos"])
 
 STATE_LOCK = threading.Lock()
 TASKS = {}
@@ -77,7 +78,7 @@ def _run_one(task_id: str, video_url: str, styles: list, tmp_root: str):
     _set_task(task_id, status="running", stage="queued")
 
     try:
-        captions = main.caption_video(video_url, styles, work_dir, on_stage=on_stage)
+        captions = main.captvid(video_url, styles, work_dir, on_stage=on_stage)
         _set_task(task_id, status="done", stage="done", captions=captions)
     except Exception as e:
         traceback.print_exc()
@@ -205,6 +206,13 @@ def get_config():
         "judge_threshold": main.JUDGE_THRESHOLD,
         "styles": list(main.STYLE_DESCRIPTIONS.keys()),
     }
+
+@app.get("/config")
+def get_config():
+    return {
+        "judge_threshold": main.JUDGE_THRESHOLD,
+        "styles": list(main.STYLE_DESCRIPTIONS.keys()),
+    }
 @app.get("/tasks/raw")
 def get_tasks_raw():
     if not TASKS_PATH.exists():
@@ -221,10 +229,13 @@ def save_tasks_raw(body: TasksRawBody):
     TASKS_PATH.write_text(body.content)
     return {"status": "saved", "task_count": len(parsed)}
 
-class EnvBody(BaseModel):
-    GROQ_API_KEY: Optional[str] = None
-    HACKCLUB_API_KEY: Optional[str] = None
+@app.get("/config/file")
+def get_config_file():
+    with open("config.json", "r", encoding="utf-8") as f:
+        return json.load(f)
 
-@app.post("/config/env")
-def save_env(body: EnvBody):
- ...
+@app.post("/config/file")
+def save_config_file(config: dict):
+    with open("config.json", "w", encoding="utf-8") as f:
+        json.dump(config, f, indent=2)
+    return {"ok": True}
