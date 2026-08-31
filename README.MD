@@ -68,7 +68,7 @@ rate limits: YOW DONT SET IT SO HIGH i know you want to mass produce but this is
 
 ## Project layout
 
-- `captioner.py` main pipeline, all the work is processed here
+- `main.py` main pipeline, all the work is processed here
 - `mdr.py`, `gc.py`, `hcc.py` hello is prrovider here? yea this thing calls for the model
 - `api.py` / `server.py` backend dude
 - `index.html` main view! not really pretty atleast it work
