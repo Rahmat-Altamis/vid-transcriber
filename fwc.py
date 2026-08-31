@@ -45,4 +45,4 @@ def chat_completion(model: str, messages: list, max_tokens: int = 500,
             print(f"[fireworks] requests error ({e}), retrying in {wait}s")
             time.sleep(wait)
 
-    raise FireworksError(f"Failed to call Fireworks API after {MAX_RETRIES} ATTEMPTS: {last_err}")
+    raise FireworksErrr(f"Failed to call Fireworks API after {MAX_RETRIES} ATTEMPTS: {last_err}")

@@ -1,0 +1,20 @@
+[
+  {
+    "task_id": "example-1",
+    "captions": {
+      "formal": "During a rain-affected Formula 1 race at the Brazilian Grand Prix, cars travel on a wet circuit with heavy spray and reduced visibility. Onboard footage identifies Max Verstappen gaining positions, while team radio instructs him to stay out and drive carefully. A damaged car prompts a red flag, and later Red Bull team members are shown celebrating in the paddock area.",
+      "sarcastic": "At the Brazilian Grand Prix, the track has apparently decided to become a shallow river, so the Formula 1 cars proceed through spray and low visibility with admirable stubbornness. Max Verstappen gains places while the radio calmly asks him to be careful, a bold suggestion given all the water. A crash brings out the red flag, and Red Bull later celebrates making it through the weather experiment.",
+      "humorous_tech": "The Brazilian Grand Prix is running in full wet-weather mode: visibility has timed out, spray is flooding the UI, and Max Verstappen is climbing the position stack from the onboard feed. Race control hits the red-flag interrupt after a damaged car meets the barrier, and later the Red Bull garage celebrates like the production deploy somehow survived the storm.",
+      "humorous_non_tech": "Oh goodness, it is absolutely pouring at the race in Brazil, and the cars are splashing around like very expensive ducks. Max Verstappen moves up through the pack while everyone tells him to be extra careful, then a crash brings out the red flag. By the end, the Red Bull team is hugging and cheering like the whole family just won a rainy-day board game."
+    }
+  },
+  {
+    "task_id": "example-2",
+    "captions": {
+      "formal": "At the Formula 1 São Paulo Grand Prix podium ceremony, the Red Bull driver marked with “MAX” and the Dutch flag stands on the top step after finishing first. Other drivers, including one in an Alpine BWT suit, occupy adjacent podium positions as Formula 1, Lenovo, Rolex, Pirelli, and FIA branding frame the presentation.",
+      "sarcastic": "Here is the São Paulo podium, where the Red Bull driver labeled “MAX” has taken the highest step, apparently because winning still requires standing slightly above everyone else. The flags, logos, Ferrari Trento bottle, and fellow drivers are all present, performing their duties with the practiced seriousness of a ceremony that has done this many, many times.",
+      "humorous_tech": "Post-race deployment successful: the Red Bull driver tagged “MAX” has been promoted to the top podium environment at the São Paulo Grand Prix. Adjacent driver modules are loaded on lower tiers, the Dutch flag renders correctly, Ferrari Trento is queued for celebration, and the branding layer is running at full sponsorship capacity.",
+      "humorous_non_tech": "Look at him up there on the big winner step in São Paulo, smiling with all those fancy racing logos around him! The other drivers are standing nearby, the bottle is ready for celebrating, and even the crowd gets a little moment to look up like proud relatives at a school awards day."
+    }
+  }
+]

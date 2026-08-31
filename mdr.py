@@ -1,12 +1,12 @@
-import fireworks_client as fw
-import groq_client as groq
+import fwc as fw
+import hcc as hackclub
+import gc as groq
 
 last_error = None
 
-PROVIDERS = {"fireworks": fw, "groq": groq}
+PROVIDERS = {"fireworks": fw, "groq": groq, "hackclub": hackclub,}
 
 def call_model(spec, messages, max_tokens=500, response_format_json= False, temperature=0.7):
-    """returns none if some goes wrong, so callers could decide any whether or fall back or skip to the fallbackk, actual error will saved in last_error"""
     global last_error
     last_error = None
     provider, _, model_id = spec.partition(":")
@@ -24,11 +24,3 @@ def call_model(spec, messages, max_tokens=500, response_format_json= False, temp
         last_error = str(e)
         print(f"[model_router] '{spec}' failed: {e}")
         return None
-
-
-
-
-
-
-
-

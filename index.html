@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Caption Wire</title>
+<style>
+  :root{
+    --canvas:#0d1117;
+    --canvas-subtle:#161b22;
+    --canvas-inset:#010409;
+    --border:#30363d;
+    --border-muted:#21262d;
+    --fg:#e6edf3;
+    --fg-muted:#8b949e;
+    --fg-subtle:#6e7681;
+
+    --accent-fg:#4493f8;
+    --accent-emphasis:#1f6feb;
+
+    --success-fg:#3fb950;
+    --success-emphasis:#238636;
+    --success-emphasis-hover:#2ea043;
+    --success-subtle:rgba(63,185,80,0.15);
+
+    --danger-fg:#f85149;
+    --danger-emphasis:#da3633;
+    --danger-subtle:rgba(248,81,73,0.15);
+
+    --attention-fg:#d29922;
+    --attention-subtle:rgba(210,153,34,0.15);
+
+    --btn-bg:#21262d;
+    --btn-hover:#30363d;
+    --btn-border:#30363d;
+    --btn-primary-text:#ffffff;
+
+    --radius:6px;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--canvas);
+    color:var(--fg);
+    font-family:var(--sans);
+    font-size:14px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent-emphasis);color:#fff;}
+  :focus-visible{outline:2px solid var(--accent-fg);outline-offset:1px;}
+  @media (prefers-reduced-motion: reduce){ * { animation:none !important; transition:none !important; } }
+
+  a{color:var(--accent-fg);}
+  code{font-family:var(--mono);background:var(--canvas-inset);padding:1px 5px;border-radius:4px;font-size:0.9em;}
+
+  header.topbar{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    padding:18px 24px;
+    border-bottom:1px solid var(--border);
+    background:var(--canvas-subtle);
+  }
+  header.topbar h1{
+    font-size:18px;
+    font-weight:600;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  header.topbar .tagline{
+    font-size:12px;
+    color:var(--fg-muted);
+  }
+  #globalStatus{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--fg-muted);
+    display:flex;
+    align-items:center;
+  }
+  #globalStatus b{color:var(--fg);font-weight:600;}
+
+  .status-dot{
+    display:inline-block;
+    width:8px;height:8px;
+    border-radius:50%;
+    margin-right:7px;
+    flex-shrink:0;
+    background:var(--fg-subtle);
+  }
+  .status-dot.ok{background:var(--success-fg);}
+  .status-dot.running{background:var(--attention-fg);animation:pulse 1.1s ease-in-out infinite;}
+  .status-dot.error{background:var(--danger-fg);}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+  main{
+    max-width:1000px;
+    margin:0 auto;
+    padding:20px 24px 60px;
+  }
+
+  .box{
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    background:var(--canvas);
+    margin-bottom:16px;
+  }
+  .box > summary,
+  .box-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    padding:10px 16px;
+    background:var(--canvas-subtle);
+    border-bottom:1px solid var(--border);
+    font-weight:600;
+    font-size:13px;
+    border-radius:var(--radius) var(--radius) 0 0;
+    cursor:default;
+  }
+  details.box > summary{cursor:pointer;list-style:none;}
+  details.box > summary::-webkit-details-marker{display:none;}
+  details.box > summary::before{
+    content:"▸";
+    display:inline-block;
+    margin-right:8px;
+    font-size:10px;
+    color:var(--fg-subtle);
+    transition:transform 0.1s ease;
+  }
+  details.box[open] > summary::before{transform:rotate(90deg);}
+  .box-body{padding:16px;}
+
+  .field{margin-bottom:12px;}
+  .field:last-child{margin-bottom:0;}
+  .field label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--fg);
+    margin-bottom:4px;
+  }
+  .field .hint{
+    font-size:11px;
+    color:var(--fg-subtle);
+    margin-top:4px;
+  }
+  .input-row{display:flex;gap:8px;}
+  .input-row input{flex:1;}
+
+  input[type=text], input[type=password]{
+    width:100%;
+    font-family:var(--mono);
+    font-size:12.5px;
+    padding:6px 10px;
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    background:var(--canvas-inset);
+    color:var(--fg);
+  }
+  input:focus-visible{border-color:var(--accent-fg);}
+
+  textarea.code{
+    width:100%;
+    min-height:180px;
+    font-family:var(--mono);
+    font-size:12.5px;
+    line-height:1.5;
+    padding:12px;
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    background:var(--canvas-inset);
+    color:var(--fg);
+    resize:vertical;
+    white-space:pre;
+    tab-size:2;
+  }
+  textarea.code:focus-visible{border-color:var(--accent-fg);}
+
+  .btn{
+    font-family:var(--sans);
+    font-weight:500;
+    font-size:12.5px;
+    background:var(--btn-bg);
+    color:var(--fg);
+    border:1px solid var(--btn-border);
+    border-radius:var(--radius);
+    padding:6px 14px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn:hover:not(:disabled){background:var(--btn-hover);}
+  .btn:disabled{opacity:0.5;cursor:not-allowed;}
+  .btn.primary{background:var(--success-emphasis);color:var(--btn-primary-text);border-color:rgba(240,246,252,0.1);}
+  .btn.primary:hover:not(:disabled){background:var(--success-emphasis-hover);}
+  .btn.small{padding:3px 9px;font-size:11.5px;}
+  .btn-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+
+  .status-line{font-family:var(--mono);font-size:11.5px;color:var(--fg-muted);min-height:1.4em;}
+  .status-line.error{color:var(--danger-fg);font-weight:600;}
+  .status-line.error::before{content:"✕ ";}
+  .status-line.ok{color:var(--success-fg);}
+
+  .conn-error{
+    margin:0 auto 16px;
+    max-width:1000px;
+    padding:10px 16px;
+    border:1px solid rgba(248,81,73,0.4);
+    border-radius:var(--radius);
+    background:var(--danger-subtle);
+    color:var(--danger-fg);
+    font-family:var(--mono);
+    font-size:12px;
+  }
+  .conn-error::before{content:"✕ "; font-weight:600;}
+
+  .empty{
+    padding:28px 16px;
+    text-align:center;
+    color:var(--fg-muted);
+    border:1px dashed var(--border);
+    border-radius:var(--radius);
+    font-size:13px;
+  }
+  .empty .big{font-weight:600;color:var(--fg);margin-bottom:4px;}
+
+  .badge{
+    font-family:var(--mono);
+    font-size:10.5px;
+    color:var(--accent-fg);
+    border:1px solid rgba(68,147,248,0.4);
+    background:rgba(68,147,248,0.1);
+    border-radius:10px;
+    padding:1px 8px;
+  }
+
+  .dispatch .box-header{font-family:var(--mono);}
+  .run-grid{
+    display:flex;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .preview{width:220px;max-width:100%;flex-shrink:0;}
+  .preview video, .preview iframe{
+    width:220px;max-width:100%;aspect-ratio:16/9;
+    border-radius:4px;background:#000;border:none;display:block;
+  }
+  .report{
+    flex:1;min-width:220px;
+    font-family:var(--mono);font-size:12px;line-height:1.6;
+    background:var(--canvas-inset);
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:10px 12px;
+    color:var(--fg);
+  }
+  .report .label{display:block;font-size:10.5px;color:var(--fg-subtle);margin-bottom:5px;}
+  .report.pending{color:var(--fg-subtle);}
+  .report .err-block{font-weight:600;color:var(--danger-fg);}
+  .report .err-block::before{content:"✕ ";}
+
+  ul.steps{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:1px;font-family:var(--mono);font-size:12px;}
+  ul.steps li{display:flex;align-items:center;gap:8px;padding:2px 0;color:var(--fg-subtle);}
+  ul.steps li .step-icon{width:12px;text-align:center;flex-shrink:0;}
+  ul.steps li.done{color:var(--fg-muted);}
+  ul.steps li.done .step-icon{color:var(--success-fg);}
+  ul.steps li.active{color:var(--fg);font-weight:600;}
+  ul.steps li.active .step-icon{color:var(--attention-fg);animation:pulse 1.1s ease-in-out infinite;}
+  ul.steps li.error{color:var(--danger-fg);font-weight:600;}
+  ul.steps li.error .step-icon{color:var(--danger-fg);}
+
+  .bylines{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:10px;
+    margin-top:16px;
+  }
+  .byline{border:1px solid var(--border);border-radius:4px;padding:12px;background:var(--canvas-subtle);}
+  .byline-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .byline-name{font-weight:600;font-size:13px;}
+  .byline-tag{font-family:var(--mono);font-size:10.5px;color:var(--fg-subtle);margin-top:1px;}
+  .byline-caption{font-size:13px;margin-top:8px;min-height:34px;color:var(--fg);}
+  .byline-caption.empty{color:var(--fg-subtle);font-style:italic;}
+  .byline-footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+  .scores{font-family:var(--mono);font-size:10.5px;color:var(--fg-subtle);}
+  .verdict{font-family:var(--mono);font-size:10.5px;padding:1px 7px;border-radius:10px;flex-shrink:0;border:1px solid transparent;}
+  .verdict.pass{color:var(--success-fg);background:var(--success-subtle);border-color:rgba(63,185,80,0.4);}
+  .verdict.revise{color:var(--danger-fg);background:var(--danger-subtle);border-color:rgba(248,81,73,0.4);font-weight:600;}
+
+  footer{
+    text-align:center;
+    padding:20px;
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--fg-subtle);
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div>
+    <h1>VID transcibe</h1>
+    <div class="tagline">Multi model video captioning</div>
+  </div>
+  <div id="globalStatus"><span class="status-dot"></span>not connected</div>
+</header>
+
+<main>
+
+  <div id="connError" class="conn-error" style="display:none;"></div>
+
+  <details class="box" id="settingsBox">
+    <summary>Settings</summary>
+    <div class="box-body">
+      <div class="field">
+        <label for="apiBase">API address</label>
+        <input id="apiBase" type="text" value="http://localhost:8000" spellcheck="false" />
+      </div>
+      <div class="field">
+        <label for="groqKey">GROQ_API_KEY <span id="groqStatus" class="hint"></span></label>
+        <div class="input-row">
+          <input id="groqKey" type="password" placeholder="Enter to set or replace" spellcheck="false" autocomplete="off" />
+          <button type="button" class="btn small" data-toggle-for="groqKey">Show</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="hackKey">HACKCLUB_API_KEY <span id="hackStatus" class="hint"></span></label>
+        <div class="input-row">
+          <input id="hackKey" type="password" placeholder="Enter to set or replace" spellcheck="false" autocomplete="off" />
+          <button type="button" class="btn small" data-toggle-for="hackKey">Show</button>
+        </div>
+        <div class="hint">Keys are written to the server's <code>.env</code> file. Leave a field blank to keep its current value.</div>
+      </div>
+      <div class="btn-row">
+        <button id="saveSettingsBtn" class="btn primary">Save settings</button>
+        <span id="settingsStatus" class="status-line"></span>
+      </div>
+    </div>
+  </details>
+
+  <details class="box" id="tasksBox" open>
+    <summary>tasks.json <span class="badge" style="margin-left:8px;">input/tasks.json</span></summary>
+    <div class="box-body">
+      <textarea id="tasksEditor" class="code" spellcheck="false">[]</textarea>
+      <div class="btn-row" style="margin-top:10px;">
+        <button id="reloadTasksBtn" class="btn">Reload from disk</button>
+        <button id="saveTasksBtn" class="btn">Save</button>
+        <button id="dispatchBtn" class="btn primary">Dispatch all clips</button>
+        <span id="tasksStatus" class="status-line"></span>
+      </div>
+    </div>
+  </details>
+
+  <div class="box">
+    <div class="box-header">Quick test</div>
+    <div class="box-body">
+      <div class="input-row">
+        <input id="quickUrl" type="text" placeholder="https://youtube.com/watch?v=…" spellcheck="false" />
+        <button id="quickBtn" class="btn">Run</button>
+      </div>
+      <div id="quickStatus" class="status-line" style="margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <div id="adhocList"></div>
+  <div id="adhocEmpty" class="empty" style="display:none;">Paste a video URL above and run it.</div>
+
+  <div id="batchList"></div>
+  <div id="batchEmpty" class="empty">
+    <div class="big">No runs yet</div>
+    <div>Edit tasks.json above and dispatch to see clips here.</div>
+  </div>
+
+</main>
+
+<footer>transcriber VID local dispatch board</footer>
+
+<script>
+
+const persontype = {
+  formal:             { name: "The Naturalist", tag: "nature-documentary narrator" },
+  sarcastic:          { name: "The Critic",      tag: "dry, argumentative" },
+  humorous_tech:      { name: "The Debugger",    tag: "tech-humor voice" },
+  humorous_non_tech:  { name: "The Relative",    tag: "family-joke voice" },
+};
+function personaFor(style){
+  return persontype[style] || { name: style.replace(/_/g,' '), tag: "" };
+}
+
+const STAGE_ORDER = [
+  { key:"queued",             label:"Queued" },
+  { key:"downloading",        label:"Downloading" },
+  { key:"extracting_frames",  label:"Extracting frames" },
+  { key:"describing",         label:"Describing" },
+  { key:"drafting_opinions",  label:"Drafting captions" },
+  { key:"reconciling",        label:"Reconciling" },
+  { key:"judging",            label:"Judging" },
+  { key:"regenerating",       label:"Regenerating" },
+  { key:"done",                label:"Done" },
+];
+const STAGE_ALIAS = { described:"describing", judged:"judging", transcribing:"extracting_frames" };
+function stageIndex(stage){
+  if(!stage) return -1;
+  const key = STAGE_ALIAS[stage] || stage;
+  return STAGE_ORDER.findIndex(s => s.key === key);
+}
+
+let judgeThreshold = 0.7;
+let polling = null;
+let batchOrder = [];
+let adhocOrder = [];
+
+const apiInput = document.getElementById('apiBase');
+const connError = document.getElementById('connError');
+const globalStatus = document.getElementById('globalStatus');
+
+const groqKeyInput = document.getElementById('groqKey');
+const hackKeyInput = document.getElementById('hackKey');
+const groqStatusEl = document.getElementById('groqStatus');
+const hackStatusEl = document.getElementById('hackStatus');
+const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+const settingsStatus = document.getElementById('settingsStatus');
+
+const tasksEditor = document.getElementById('tasksEditor');
+const saveTasksBtn = document.getElementById('saveTasksBtn');
+const reloadTasksBtn = document.getElementById('reloadTasksBtn');
+const dispatchBtn = document.getElementById('dispatchBtn');
+const tasksStatus = document.getElementById('tasksStatus');
+
+const quickUrlInput = document.getElementById('quickUrl');
+const quickBtn = document.getElementById('quickBtn');
+const quickStatus = document.getElementById('quickStatus');
+
+const batchListEl = document.getElementById('batchList');
+const batchEmptyEl = document.getElementById('batchEmpty');
+const adhocListEl = document.getElementById('adhocList');
+const adhocEmptyEl = document.getElementById('adhocEmpty');
+
+function apiBase(){ return apiInput.value.replace(/\/+$/,''); }
+
+function setGlobalStatus(html, state){
+  globalStatus.innerHTML = `<span class="status-dot ${state}"></span>${html}`;
+}
+
+async function apiGet(path){
+  const res = await fetch(apiBase() + path);
+  if(!res.ok) throw new Error(path + ' -> ' + res.status);
+  return res.json();
+}
+async function apiPost(path, body){
+  const opts = { method:'POST' };
+  if(body !== undefined){
+    opts.headers = { 'Content-Type': 'application/json' };
+    opts.body = JSON.stringify(body);
+  }
+  const res = await fetch(apiBase() + path, opts);
+  if(!res.ok){
+    const errBody = await res.json().catch(()=>({}));
+    throw new Error(errBody.detail || (path + ' -> ' + res.status));
+  }
+  return res.json();
+}
+
+function youTubeVideoId(url){
+  try{
+    const u = new URL(url);
+    if(u.hostname.includes('youtu.be')) return u.pathname.slice(1);
+    if(u.hostname.includes('youtube.com')){
+      if(u.searchParams.get('v')) return u.searchParams.get('v');
+      const m = u.pathname.match(/\/(embed|shorts)\/([^/?]+)/);
+      if(m) return m[2];
+    }
+  }catch(e){}
+  return null;
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function applyConfig(cfg){
+  judgeThreshold = cfg.judge_threshold ?? 0.7;
+  const env = cfg.env || {};
+  groqStatusEl.textContent = env.GROQ_API_KEY_set === undefined ? '' : (env.GROQ_API_KEY_set ? '(configured)' : '(not set)');
+  hackStatusEl.textContent = env.HACKCLUB_API_KEY_set === undefined ? '' : (env.HACKCLUB_API_KEY_set ? '(configured)' : '(not set)');
+}
+
+document.querySelectorAll('[data-toggle-for]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const input = document.getElementById(btn.dataset.toggleFor);
+    const showing = input.type === 'text';
+    input.type = showing ? 'password' : 'text';
+    btn.textContent = showing ? 'Show' : 'Hide';
+  });
+});
+
+saveSettingsBtn.addEventListener('click', async () => {
+  const payload = {};
+  if(groqKeyInput.value.trim()) payload.GROQ_API_KEY = groqKeyInput.value.trim();
+  if(hackKeyInput.value.trim()) payload.HACKCLUB_API_KEY = hackKeyInput.value.trim();
+  settingsStatus.className = 'status-line';
+  if(!Object.keys(payload).length){
+    settingsStatus.textContent = 'Enter a value to update.';
+    return;
+  }
+  saveSettingsBtn.disabled = true;
+  settingsStatus.textContent = 'Saving…';
+  try{
+    await apiPost('/config/env', payload);
+    groqKeyInput.value = '';
+    hackKeyInput.value = '';
+    settingsStatus.className = 'status-line ok';
+    settingsStatus.textContent = 'Saved to .env';
+    const cfg = await apiGet('/config');
+    applyConfig(cfg);
+  }catch(e){
+    settingsStatus.className = 'status-line error';
+    settingsStatus.textContent = e.message;
+  }finally{
+    saveSettingsBtn.disabled = false;
+  }
+});
+
+async function loadTasksRaw(){
+  try{
+    const data = await apiGet('/tasks/raw');
+    tasksEditor.value = data.content ?? JSON.stringify(data, null, 2);
+  }catch(e){
+    try{
+      const tasks = await apiGet('/tasks');
+      tasksEditor.value = JSON.stringify(
+        tasks.map(t => t.styles ? { task_id:t.task_id, video_url:t.video_url, styles:t.styles }
+                                 : { task_id:t.task_id, video_url:t.video_url }),
+        null, 2
+      );
+    }catch(e2){
+      tasksEditor.value = '[\n  { "task_id": "example-1", "video_url": "https://youtube.com/shorts/vKbnDsKbEmI?si=uM27PtFuh3RAkvWt" }\n]';
+    }
+  }
+}
+
+function parseTasksEditor(){
+  let parsed;
+  try{ parsed = JSON.parse(tasksEditor.value); }
+  catch(e){ throw new Error('Invalid JSON — ' + e.message); }
+  if(!Array.isArray(parsed)) throw new Error('tasks.json must be a JSON array');
+  for(const t of parsed){
+    if(!t || typeof t.task_id !== 'string' || typeof t.video_url !== 'string'){
+      throw new Error('Each entry needs a "task_id" and a "video_url"');
+    }
+  }
+  return parsed;
+}
+
+async function saveTasksToDisk(){
+  const parsed = parseTasksEditor();
+  await apiPost('/tasks/raw', { content: JSON.stringify(parsed, null, 2) });
+  return parsed;
+}
+
+reloadTasksBtn.addEventListener('click', async () => {
+  tasksStatus.className = 'status-line';
+  tasksStatus.textContent = 'Reloading…';
+  await loadTasksRaw();
+  tasksStatus.className = 'status-line ok';
+  tasksStatus.textContent = 'Reloaded from disk';
+});
+
+saveTasksBtn.addEventListener('click', async () => {
+  saveTasksBtn.disabled = true;
+  tasksStatus.className = 'status-line';
+  tasksStatus.textContent = 'Saving…';
+  try{
+    const parsed = await saveTasksToDisk();
+    tasksStatus.className = 'status-line ok';
+    tasksStatus.textContent = `Saved ${parsed.length} task${parsed.length === 1 ? '' : 's'} to tasks.json`;
+    const tasks = await apiGet('/tasks');
+    batchOrder = tasks.map(t => t.task_id);
+    renderBatchIdle(tasks);
+  }catch(e){
+    tasksStatus.className = 'status-line error';
+    tasksStatus.textContent = e.message;
+  }finally{
+    saveTasksBtn.disabled = false;
+  }
+});
+
+dispatchBtn.addEventListener('click', async () => {
+  dispatchBtn.disabled = true;
+  tasksStatus.className = 'status-line';
+  let parsed;
+  try{
+    parsed = await saveTasksToDisk();
+  }catch(e){
+    tasksStatus.className = 'status-line error';
+    tasksStatus.textContent = e.message;
+    dispatchBtn.disabled = false;
+    return;
+  }
+  tasksStatus.textContent = `Saved ${parsed.length} task${parsed.length === 1 ? '' : 's'} — dispatching…`;
+  try{
+    await apiPost('/run');
+    const tasks = await apiGet('/tasks');
+    batchOrder = tasks.map(t => t.task_id);
+    renderBatchIdle(tasks);
+    refreshStatus();
+    if(!polling) polling = setInterval(refreshStatus, 1500);
+  }catch(e){
+    connError.style.display = 'block';
+    connError.textContent = 'Could not start a run: ' + e.message;
+    dispatchBtn.disabled = false;
+  }
+});
+
+quickBtn.addEventListener('click', async () => {
+  const url = quickUrlInput.value.trim();
+  quickStatus.className = 'status-line';
+  if(!url){
+    quickStatus.className = 'status-line error';
+    quickStatus.textContent = 'Paste a video URL first.';
+    return;
+  }
+  quickBtn.disabled = true;
+  quickStatus.textContent = 'Starting…';
+  try{
+    await apiPost('/run_url', { video_url: url });
+    quickUrlInput.value = '';
+    quickStatus.className = 'status-line ok';
+    quickStatus.textContent = 'Started';
+    refreshStatus();
+    if(!polling) polling = setInterval(refreshStatus, 1500);
+  }catch(e){
+    quickStatus.className = 'status-line error';
+    quickStatus.textContent = e.message;
+  }finally{
+    quickBtn.disabled = false;
+  }
+});
+quickUrlInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') quickBtn.click(); });
+
+
+function renderBatchIdle(tasks){
+  if(!tasks.length){
+    batchEmptyEl.style.display = 'block';
+    batchListEl.innerHTML = '';
+    return;
+  }
+  batchEmptyEl.style.display = 'none';
+  batchListEl.innerHTML = tasks.map((t,i) => dispatchShell(t.task_id, i, false)).join('');
+  tasks.forEach(t => fillDispatch(t.task_id, {
+    video_url:t.video_url, styles:t.styles, status:'idle', stage:null,
+    captions:{}, judge_scores:null, description:null, source:null,
+  }));
+}
+
+function dispatchShell(taskId, i, adhoc){
+  const label = adhoc
+    ? `quick-test · #${String(i+1).padStart(2,'0')}`
+    : `batch · #${String(i+1).padStart(3,'0')} · ${taskId}`;
+  return `
+    <div class="box dispatch" id="d-${taskId}">
+      <div class="box-header">
+        <span>${escapeHtml(label)}</span>
+        <span class="badge" id="src-${taskId}"></span>
+      </div>
+      <div class="box-body">
+        <div class="run-grid">
+          <div class="preview" id="preview-${taskId}"></div>
+          <div class="report" id="report-${taskId}"></div>
+        </div>
+        <ul class="steps" id="steps-${taskId}"></ul>
+        <div class="bylines" id="bylines-${taskId}"></div>
+      </div>
+    </div>`;
+}
+
+function renderSteps(taskId, info){
+  const el = document.getElementById('steps-' + taskId);
+  if(!el) return;
+  const idx = stageIndex(info.stage);
+  el.innerHTML = STAGE_ORDER.map((s, i) => {
+    let icon = '○', cls = 'pending';
+    if(info.status === 'error' && i === idx){ icon = '✕'; cls = 'error'; }
+    else if(i < idx || (i === idx && info.stage === 'done')){ icon = '✓'; cls = 'done'; }
+    else if(i === idx){ icon = '●'; cls = 'active'; }
+    return `<li class="${cls}"><span class="step-icon">${icon}</span>${s.label}</li>`;
+  }).join('');
+}
+
+function fillDispatch(taskId, info){
+  const previewEl = document.getElementById('preview-' + taskId);
+  if(previewEl && !previewEl.dataset.filled){
+    const ytId = youTubeVideoId(info.video_url || '');
+    previewEl.innerHTML = ytId
+      ? `<iframe src="https://www.youtube.com/embed/${ytId}" title="preview" allowfullscreen></iframe>`
+      : `<video controls preload="metadata" src="${info.video_url || ''}"></video>`;
+    previewEl.dataset.filled = '1';
+  }
+
+  const srcEl = document.getElementById('src-' + taskId);
+  if(srcEl && info.source){
+    srcEl.textContent = info.source === 'yt-dlp' ? 'yt-dlp' : 'direct link';
+  }
+
+  renderSteps(taskId, info);
+
+  const reportEl = document.getElementById('report-' + taskId);
+  if(info.status === 'error'){
+    reportEl.className = 'report';
+    reportEl.innerHTML = `<span class="label">Report</span><span class="err-block">${escapeHtml(info.error || 'Run failed')}</span>`;
+  }else if(info.description){
+    reportEl.className = 'report';
+    reportEl.innerHTML = `<span class="label">Report — ground truth</span>${escapeHtml(info.description)}`;
+  }else{
+    reportEl.className = 'report pending';
+    reportEl.textContent = info.status === 'idle' ? 'Waiting to dispatch.' : 'Processing…';
+  }
+
+  const styles = info.styles && info.styles.length ? info.styles : Object.keys(persontype);
+  const bylinesEl = document.getElementById('bylines-' + taskId);
+  bylinesEl.innerHTML = styles.map(style => bylineCard(taskId, style, info)).join('');
+}
+
+function bylineCard(taskId, style, info){
+  const persona = personaFor(style);
+  const caption = (info.captions && info.captions[style]) || '';
+  const scores = info.judge_scores && info.judge_scores[style];
+  const capId = `cap-${taskId}-${style}`;
+  let verdict = '';
+  if(scores){
+    const min = Math.min(scores.accuracy, scores.style_match);
+    const passed = min >= judgeThreshold;
+    verdict = `<span class="verdict ${passed ? 'pass' : 'revise'}">${passed ? 'Pass' : 'Revise'}</span>`;
+  }
+  const scoreLine = scores ? `acc ${scores.accuracy.toFixed(2)} · style ${scores.style_match.toFixed(2)}` : '';
+  return `
+    <div class="byline">
+      <div class="byline-head">
+        <div>
+          <div class="byline-name">${escapeHtml(persona.name)}</div>
+          <div class="byline-tag">${escapeHtml(persona.tag)}</div>
+        </div>
+        ${verdict}
+      </div>
+      <div class="byline-caption ${caption ? '' : 'empty'}" id="${capId}">${caption ? escapeHtml(caption) : 'Waiting for output.'}</div>
+      <div class="byline-footer">
+        <span class="scores">${scoreLine}</span>
+        <button class="btn small" onclick="copyCaption('${capId}', this)" ${caption ? '' : 'disabled'}>Copy</button>
+      </div>
+    </div>`;
+}
+
+function copyText(text){
+  if(navigator.clipboard && window.isSecureContext){
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise((resolve) => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); }catch(e){}
+    document.body.removeChild(ta);
+    resolve();
+  });
+}
+function copyCaption(elId, btn){
+  const el = document.getElementById(elId);
+  if(!el || !el.textContent) return;
+  copyText(el.textContent).then(() => {
+    const original = btn.textContent;
+    btn.textContent = 'Copied';
+    setTimeout(() => { btn.textContent = original; }, 1200);
+  });
+}
+
+
+async function refreshStatus(){
+  try{
+    const st = await apiGet('/status');
+    connError.style.display = 'none';
+    const ids = Object.keys(st.tasks);
+    const batchIds = ids.filter(id => !st.tasks[id].adhoc);
+    const adhocIds = ids.filter(id => st.tasks[id].adhoc);
+    const doneCount = arr => arr.filter(id => ['done','error'].includes(st.tasks[id].status)).length;
+
+    if(st.status === 'running'){
+      setGlobalStatus(`running · <b>${doneCount(batchIds)}/${batchIds.length}</b> batch · <b>${doneCount(adhocIds)}/${adhocIds.length}</b> quick`, 'running');
+      dispatchBtn.disabled = true;
+    }else{
+      const summary = ids.length ? `idle · <b>${doneCount(batchIds)}/${batchIds.length}</b> batch · <b>${doneCount(adhocIds)}/${adhocIds.length}</b> quick` : 'connected';
+      setGlobalStatus(summary, 'ok');
+      dispatchBtn.disabled = false;
+    }
+
+    batchIds.forEach(id => {
+      if(!document.getElementById('d-' + id)){
+        batchEmptyEl.style.display = 'none';
+        batchListEl.insertAdjacentHTML('beforeend', dispatchShell(id, batchOrder.indexOf(id), false));
+      }
+      fillDispatch(id, st.tasks[id]);
+    });
+
+    adhocIds.forEach(id => {
+      if(!adhocOrder.includes(id)) adhocOrder.push(id);
+      if(!document.getElementById('d-' + id)){
+        adhocEmptyEl.style.display = 'none';
+        adhocListEl.insertAdjacentHTML('afterbegin', dispatchShell(id, adhocOrder.indexOf(id), true));
+      }
+      fillDispatch(id, st.tasks[id]);
+    });
+
+    if(adhocIds.length === 0) adhocEmptyEl.style.display = 'block';
+
+    if(st.status === 'running' && !polling){
+      polling = setInterval(refreshStatus, 1500);
+    }else if(st.status !== 'running' && polling){
+      clearInterval(polling);
+      polling = null;
+    }
+  }catch(e){
+  }
+}
+
+async function bootstrap(){
+  try{
+    const cfg = await apiGet('/config');
+    applyConfig(cfg);
+    connError.style.display = 'none';
+  }catch(e){
+    connError.style.display = 'block';
+    connError.textContent = "Can't reach the API at " + apiBase() + " (" + e.message + ")";
+    setGlobalStatus('not connected', 'error');
+    return;
+  }
+  try{
+    const tasks = await apiGet('/tasks');
+    batchOrder = tasks.map(t => t.task_id);
+    renderBatchIdle(tasks);
+  }catch(e){ /* non-fatal */ }
+  await loadTasksRaw();
+  refreshStatus();
+}
+apiInput.addEventListener('change', bootstrap);
+bootstrap();
+</script>
+</body>
+</html>
