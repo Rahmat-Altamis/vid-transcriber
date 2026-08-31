@@ -38,6 +38,9 @@ pip install -r requirements.txt
 this monster Needs `ffmpeg`/`ffprobe` in your `PATH` makes sure its already on path in windows or if u using linux just use terminal its gonna be faster (probably even faster than my goverment when fixing road infrastructure)
 then if there is no .env copy `.env.example` to `.env` and pour in a secret random character but in a layout for `GROQ_API_KEY` (text/judging/audio) and a cheap nice provider api key `HACKCLUB_API_KEY` for vision and you all set up!.
 
+**apps**
+dont need this tho u js need to chill
+
 ## Running it
 
 **Dashboard:**
@@ -49,7 +52,7 @@ uvicorn api:app --reload --port 8000
 Open `http://localhost:8000`. There's a quick test box caption etc etc js check it yourself.
 
 **Apps:**
- click on the captioner, if not connected try with dispatch all clips button, the indicator is it connected or not is in the upper right 
+ click on the captioner, if not connected try with dispatch all clips button, the indicator is it connected or not is in the upper right, also in upper right there is some "settings" which from there you will able to set your api key and a lot more
 
 Open `http://localhost:8000`. There's a quick test box caption etc etc js check it yourself.
 
