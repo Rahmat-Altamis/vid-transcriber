@@ -40,11 +40,16 @@ then if there is no .env copy `.env.example` to `.env` and pour in a secret rand
 
 ## Running it
 
-**Dashboard (the only way to use it except you want to hijack the endpoint):**
+**Dashboard:**
 
 ```bash
 uvicorn api:app --reload --port 8000
 ```
+
+Open `http://localhost:8000`. There's a quick test box caption etc etc js check it yourself.
+
+**Apps:**
+ click on the captioner, if not connected try with dispatch all clips button, the indicator is it connected or not is in the upper right 
 
 Open `http://localhost:8000`. There's a quick test box caption etc etc js check it yourself.
 
