@@ -4,6 +4,24 @@ hello mate! how to use? just paste an youtube url video yes the one you shared! 
 
 ![dashboard screenshot](image.png)
 
+# APP README
+
+so im too lazy to write another readme, so if you use the executable please follow this:
+1. **Download** of course please download the apps first from github release
+2. **Install** install as ordinary apps, click it both choose place to install etc etc if you use windows 11 i reccomend turn on developer mode/idk what is it that enables install app from every source (im using win 10 dont expect anything0
+3. **Running** after finished the installemnt you could check the open app in the intsallment end, or just open it, be patient if its lagging, if its open it would not always start the backend press dispatch all clips to turn on, and done you could use sample or finish the tasks.json it not always packed entirely so if you want to fill it and save it from the dashboard this is the json format:
+```bash
+[
+  {
+    "task_id": "example-1",
+    "video_url": "https://youtube.com/shorts/vKbnDsKbEmI?si=uM27PtFuh3RAkvWt"
+  }
+]
+```
+task id as the name video url as video you want to transcribe
+
+before running the engine i reccomend to go to config which there is a button in up right, enter you key such for groq and hackclub there, and press save so it would save in the backend, you could also set the ai model there, just remember to always press save after you done editing
+
 ## Why I built this
 
 so you wonder? i build this from beest actually the idea came from my hobby as doom- oops, i mean as youtube creator, at first it for such video grading, but why not make it into this masterpiece?? its beautiful
