@@ -62,15 +62,10 @@ dont need this tho u js need to chill
 ## Running it
 
 **Dashboard:**
-
+this is for DASHBOARD not the apps, apps quide is above
 ```bash
 uvicorn api:app --reload --port 8000
 ```
-
-Open `http://localhost:8000`. There's a quick test box caption etc etc js check it yourself.
-
-**Apps:**
- click on the captioner, if not connected try with dispatch all clips button, the indicator is it connected or not is in the upper right, also in upper right there is some "settings" which from there you will able to set your api key and a lot more
 
 Open `http://localhost:8000`. There's a quick test box caption etc etc js check it yourself.
 
