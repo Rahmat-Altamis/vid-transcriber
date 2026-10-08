@@ -1,6 +1,6 @@
 # Caption Wire
 
-hello mate! how to use? just paste an youtube url video yes the one you shared! and it would be thinking the moment about your funny video HAHA!
+hello mate! how to use? just paste an short youtube url video yes the one you shared! and it would be thinking the moment about your funny video HAHA!
 
 ![dashboard screenshot](image.png)
 
@@ -8,7 +8,7 @@ hello mate! how to use? just paste an youtube url video yes the one you shared! 
 
 so im too lazy to write another readme, so if you use the executable please follow this:
 1. **Download** of course please download the apps first from github release
-2. **Install** install as ordinary apps, click it both choose place to install etc etc if you use windows 11 i reccomend turn on developer mode/idk what is it that enables install app from every source (im using win 10 dont expect anything0
+2. **Install** install as ordinary apps, click it both choose place to install etc etc if you use windows 11 i reccomend turn on developer mode/idk what is it that enables install app from every source (im using win 10 dont expect anything)
 3. **Running** after finished the installemnt you could check the open app in the intsallment end, or just open it, be patient if its lagging, if its open it would not always start the backend press dispatch all clips to turn on, and done you could use sample or finish the tasks.json it not always packed entirely so if you want to fill it and save it from the dashboard this is the json format:
 ```bash
 [
@@ -47,28 +47,6 @@ There's a small dashboard ('dashboard.html', served by the FASTAPI backend) for 
 - **Electron** beta work probably gonna abandoned
 - **Vanilla HTML/JS** for display so i could present it in front of my parents
 
-## Setup
-yow before doing something else do this please
-```bash
-pip install -r requirements.txt
-```
-
-this monster Needs `ffmpeg`/`ffprobe` in your `PATH` makes sure its already on path in windows or if u using linux just use terminal its gonna be faster (probably even faster than my goverment when fixing road infrastructure)
-then if there is no .env copy `.env.example` to `.env` and pour in a secret random character but in a layout for `GROQ_API_KEY` (text/judging/audio) and a cheap nice provider api key `HACKCLUB_API_KEY` for vision and you all set up!.
-
-**apps**
-dont need this tho u js need to chill
-
-## Running it
-
-**Dashboard:**
-this is for DASHBOARD not the apps, apps quide is above
-```bash
-uvicorn api:app --reload --port 8000
-```
-
-Open `http://localhost:8000`. There's a quick test box caption etc etc js check it yourself.
-
 ## Config reference
 
 
@@ -100,6 +78,7 @@ HELLO! hei if you read this i know this is off context but i want to explain 3 t
 - first this thing is much more about 1 days programming 8 days debugging and refactoring while reading documentation for phyton
 - second AI usage is clear here u can see in the HTML one its using AI for much more refactoring there more in javascript (the most hardest langguage if i could say) is it count as 30%? idk
 - third enjoy this hatred project please, im not really into html java and css before (im more about making automation for my youtube things) so enjoy please
+- HELLO im testing this on windows 10, my device cant support win 11 (my i7 4790 wont let me) AND THIS IS ONLY SUPPORTED FOR SHORTS VIDEO, so dont send the 1 hour video cuz its gonna be failed because of big the video is
 
 ---
 ---
