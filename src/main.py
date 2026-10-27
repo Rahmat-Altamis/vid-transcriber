@@ -1,28 +1,51 @@
 import base64
 import json
 import os, re
+import shutil
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from urllib.parse import urlparse
-import requests
-import gc as groq
+import replc
 import hcc as hackclub
 import mdr
 from mdr import call_model
+from appconfig import load_config, app_dir
 
 
 def _tool_path(name):
+    exe_name = f"{name}.exe" if os.name == "nt" else name
+    dirs = []
     if getattr(sys, "frozen", False):
-        exe_name = f"{name}.exe" if os.name == "nt" else name
-        candidate = os.path.join(os.path.dirname(sys.executable), exe_name)
-        if os.path.exists(candidate):
+        dirs += [os.path.dirname(sys.executable), getattr(sys, "_MEIPASS", None)]
+    appdir = os.environ.get("APPDIR")
+    if appdir:
+        dirs += [os.path.join(appdir, "usr", "bin"), appdir]
+    dirs.append(str(app_dir()))
+    for d in dirs:
+        candidate = os.path.join(d, exe_name) if d else None
+        if candidate and os.path.isfile(candidate):
+            if not os.access(candidate, os.X_OK) and os.name != "nt":
+                try:
+                    os.chmod(candidate, 0o755)
+                except OSError:
+                    continue
             return candidate
-    return name
+    return shutil.which(name) or name
 
-with open("config.json", "r", encoding="utf-8") as f:
-    config = json.load(f)
+
+def _run(cmd, **kw):
+    if not os.path.isabs(cmd[0]) and (getattr(sys, "frozen", False) or os.environ.get("APPIMAGE")):
+        env = os.environ.copy()
+        orig = env.get("LD_LIBRARY_PATH_ORIG")
+        if orig is not None:
+            env["LD_LIBRARY_PATH"] = orig
+        else:
+            env.pop("LD_LIBRARY_PATH", None)
+        kw["env"] = env
+    return subprocess.run(cmd, **kw)
+
+config = load_config()
 
 MIN_FRAMES = config["pipeline"]["min_frames"]
 MAX_FRAMES = config["pipeline"]["max_frames"]
@@ -32,7 +55,7 @@ USE_AUDIO = config["pipeline"]["use_audio"]
 
 VISION_MODEL_SPEC = config["hackclub"]["vision_model"]
 TEXT_MODEL_SPEC = config["groq"]["text_model"]
-OPINION_MODEL_SPECS = config["hackclub"]["vision_model"].split(",")
+OPINION_MODEL_SPECS = [m.strip() for m in config["hackclub"]["vision_model"].split(",") if m.strip()]
 REASONING_MODEL_SPEC = config["hackclub"]["vision_model"]
 JUDGE_MODEL_SPEC = config["groq"]["text_model"]
 JUDGE_FALLBACK_MODEL_SPEC = config["groq"]["judge_fallback_model"]
@@ -58,57 +81,33 @@ STYLE_DESCRIPTIONS = {
 }
 
 
-def _yturl(url):
-    host = urlparse(url).netloc.lower()
-    yt_hosts = ["youtube.com", "youtu.be", "m.youtube.com", "music.youtube.com"]
-    for h in yt_hosts:
-        if h in host:
-            return True
-    return False
+VIDEO_EXTENSIONS = (".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v", ".flv", ".wmv", ".mpg", ".mpeg", ".3gp", ".ts")
 
 
-def dv(video_url: str, dest_dir: Path) -> Path:
-    dest_dir.mkdir(parents=True, exist_ok=True)
-    dest_path = dest_dir / 'clip.mp4'
-
-    if _yturl(video_url):
-        try:
-            import yt_dlp
-        except ImportError as e:
-            raise RuntimeError("video_url looks like a YouTube link but yt-dlp isn't installed -- run 'pip install -r requirements.txt'.") from e
-
-        ydl_opts = {
-            "outtmpl": str(dest_dir / "clip.%(ext)s"),
-            "format": "mp4/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best",
-            "merge_output_format": "mp4",
-            "quiet": True,
-            "no_warnings": True,
-            "noprogress": True,
-        }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([video_url])
-
-        produced = sorted(dest_dir.glob("clip.*"))
-        if not produced:
-            raise RuntimeError(f"yt-dlp did not produce an output file for {video_url}")
-        if produced[0] != dest_path:
-            produced[0].rename(dest_path)
-        return dest_path
-
-    r = requests.get(video_url, stream=True, timeout=60)
-    r.raise_for_status()
-    with open(dest_path, 'wb') as f:
-        for chunk in r.iter_content(chunk_size=1 << 16):
-            f.write(chunk)
-    r.close()
-    return dest_path
+def check_video(video_path) -> Path:
+    p = Path(video_path).expanduser()
+    if not p.is_file():
+        raise FileNotFoundError(f"video file not found: {p}")
+    if p.stat().st_size == 0:
+        raise RuntimeError(f"video file is empty: {p}")
+    return p
 
 
 def gds(video_path):
     cmd = [_tool_path("ffprobe"), "-v", "error", "-show_entries", "format=duration",
            "-of", "default=noprint_wrappers=1:nokey=1", str(video_path)]
-    out = subprocess.run(cmd, capture_output=True, text=True, check=True)
-    return float(out.stdout.strip())
+    try:
+        out = _run(cmd, capture_output=True, text=True)
+    except FileNotFoundError as e:
+        raise RuntimeError("ffprobe not found - install ffmpeg (or put ffprobe next to the app).") from e
+    if out.returncode != 0:
+        detail = (out.stderr or "").strip().splitlines()
+        raise RuntimeError("ffprobe could not read this file as a video"
+                           + (f": {detail[-1][:200]}" if detail else "."))
+    try:
+        return float(out.stdout.strip())
+    except ValueError as e:
+        raise RuntimeError("could not determine the video duration (is this a video file?)") from e
 
 
 def framesec(duration: float) -> int:
@@ -131,7 +130,7 @@ def extfram(video_path: Path, out_dir: Path, duration: float) -> list:
             "-frames:v", "1", "-q:v", "3", "-vf", "scale=768:-1",
             str(out_path),
         ]
-        subprocess.run(cmd, capture_output=True, check=True)
+        _run(cmd, capture_output=True, check=True)
         return out_path if out_path.exists() else None
 
     results = [None] * num_frames
@@ -154,23 +153,31 @@ def enb64(path: Path) -> str:
         return base64.b64encode(f.read()).decode("utf-8")
 
 
-def transaud(video_path: Path, work_dir: Path) -> str:
+def transaud(video_path: Path, work_dir: Path, warn=None) -> str:
     if not USE_AUDIO:
         return ''
 
-    audio_path = work_dir / "audio.mp3"
+    audio_path = work_dir / "audio.wav"
+    max_secs = int(replc.settings().get("max_audio_seconds") or 60)
     cmd = [
         _tool_path("ffmpeg"), "-y", "-i", str(video_path),
-        "-vn", "-acodec", "libmp3lame", "-ar", "16000", "-ac", "1", "-b:a", "64k",
+        "-vn", "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", "-t", str(max_secs),
         str(audio_path),
     ]
-    result = subprocess.run(cmd, capture_output=True)
-    bad = result.returncode != 0 or not audio_path.exists() or audio_path.stat().st_size == 0
+    result = _run(cmd, capture_output=True)
+    bad = result.returncode != 0 or not audio_path.exists() or audio_path.stat().st_size <= 44
     if bad:
         print('[audio] no audio track detected, continuing without a transcript.')
         return ''
 
-    text = groq.translate_audio_to_english(str(audio_path))
+    try:
+        text = replc.transcribe_audio(str(audio_path))
+    except Exception as e:
+        msg = f"transcription failed, continuing without audio: {e}"
+        print(f"[audio] {msg}")
+        if warn:
+            warn(msg)
+        return ''
     print(f"[audio] transcript: {len(text)} chars")
     return text
 
@@ -200,7 +207,7 @@ def descvid(frame_paths: list, transcript: str) -> str:
     "These are frames sampled evenly from avideo clip. Describe factually in english with what who why when how objectively without any gloryfication ."
 )
     if transcript:
-        instruction += f"\n\n Audio transcript (translated to English):\n{transcript[:1500]}"
+        instruction += f"\n\n Audio transcript (speech-to-text):\n{transcript[:1500]}"
 
     content = [{"type": "text", "text": instruction}]
     for path in frame_paths:
@@ -421,25 +428,28 @@ def regencapt(description: str, captions: dict, judge_scores: dict,styles: list,
             updated[s] = fixed[s]
     return updated
 
-def captvid(video_url: str, styles: list, work_dir: Path, on_stage=None) -> dict:
+def captvid(video_path, styles: list, work_dir: Path, on_stage=None) -> dict:
     def emit(stage, **extra):
         if on_stage:
             on_stage(stage, **extra)
 
-    emit("downloading", source="yt-dlp" if _yturl(video_url) else "direct")
-    video_path = dv(video_url, work_dir)
+    emit("loading", source="local file")
+    work_dir = Path(work_dir)
+    work_dir.mkdir(parents=True, exist_ok=True)
+    video_path = check_video(video_path)
     duration = gds(video_path)
 
     emit("extracting_frames")
     frames_dir = work_dir / "frames"
     with ThreadPoolExecutor(max_workers=2) as ex:
         frames_future = ex.submit(extfram, video_path, frames_dir, duration)
-        transcript_future = ex.submit(transaud, video_path, work_dir)
+        transcript_future = ex.submit(transaud, video_path, work_dir,
+                                      lambda msg: emit("warning", warning=msg))
         frame_paths = frames_future.result()
         transcript = transcript_future.result()
 
     if not frame_paths:
-        raise RuntimeError("Failed to extract frames from the video, check video_url / ffmpeg.")
+        raise RuntimeError("Failed to extract frames from the video, check that the file is a valid video and ffmpeg is installed.")
 
     emit("describing")
     description = descvid(frame_paths, transcript)

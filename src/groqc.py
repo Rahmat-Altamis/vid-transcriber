@@ -1,15 +1,19 @@
 import os
+import sys
 import time
 import requests
 import json
+from pathlib import Path
 
-with open("config.json", "r", encoding="utf-8") as f:
-    config = json.load(f)
+
+from appconfig import load_config
+
+config = load_config()
 
 GROQ_API_KEY = config["required"]["GROQ_API_KEY"]
 GROQ_BASE_URL = config["groq"]["base_url"]
-GROQ_WHISPER_MODEL = config["groq"]["whisper_model"]
-REQUEST_TIMEOUT = 25
+GROQ_WHISPER_MODEL = config["groq"].get("whisper_model", "whisper-large-v3")
+REQUEST_TIMEOUT = 60
 MAX_RETRIES = 3
 
 
@@ -36,7 +40,7 @@ def chat_completion(model: str, messages: list, max_tokens: int = 500,
     last_err = None
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            resp = requests.post(url, headers=headers, json=payload, timeout=REQUEST_TIMEOUT)
+            resp = requests.post(url, headers=headers, json=payload, timeout=(15, REQUEST_TIMEOUT))
         except requests.RequestException as e:
             last_err = e
             wait = 2 ** attempt
@@ -44,7 +48,19 @@ def chat_completion(model: str, messages: list, max_tokens: int = 500,
             time.sleep(wait)
             continue
 
-        return resp.json()["choices"][0]["message"]["content"]
+        if not resp.ok:
+            last_err = f"HTTP {resp.status_code}: {resp.text[:200]}"
+            print(f"[groq] request failed ({last_err}), retrying...")
+            time.sleep(2 ** attempt)
+            continue
+
+        try:
+            return resp.json()["choices"][0]["message"]["content"]
+        except (ValueError, KeyError, IndexError, TypeError) as e:
+            last_err = f"unexpected response: {resp.text[:200]}"
+            print(f"[groq] {last_err}")
+            time.sleep(2 ** attempt)
+            continue
 
     raise GroqError(f"Failed to call Groq API after {MAX_RETRIES} attempts: {last_err}")
 

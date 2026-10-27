@@ -1,19 +1,19 @@
 import os
+import sys
 import time
 import requests
 import json
-import json
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
+from appconfig import load_config
 
-with open(BASE_DIR / "config.json", "r", encoding="utf-8") as f:
-    config = json.load(f)
+config = load_config()
 
 HACKCLUB_API_KEY = config["required"]["HACKCLUB_API_KEY"]
 HACKCLUB_BASE_URL = config["hackclub"]["base_url"]
-REQUEST_TIMEOUT = 25
+REQUEST_TIMEOUT = 120
 MAX_RETRIES = 3
+MAX_TOKENS_CAP = 8000 
 
 class HackClubError(Exception):
     pass
@@ -45,7 +45,7 @@ def chat_completion(model: str, messages: list, max_tokens: int = 500,
                 url,
                 headers=headers,
                 json=payload,
-                timeout=REQUEST_TIMEOUT,
+                timeout=(15, REQUEST_TIMEOUT),
             )
 
             print(f"[hackclub] HTTP {resp.status_code}")
@@ -63,12 +63,37 @@ def chat_completion(model: str, messages: list, max_tokens: int = 500,
                 ) from e
 
             try:
-                return data["choices"][0]["message"]["content"]
+                choice = data["choices"][0]
+                msg = choice["message"]
             except (KeyError, IndexError, TypeError) as e:
                 print(f"[hackclub] unexpected JSON response: {data}")
                 raise HackClubError(
-                    "Hack Club response did not contain choices[0].message.content"
+                    "Hack Club response did not contain choices[0].message"
                 ) from e
+
+            finish = choice.get("finish_reason")
+            content = msg.get("content") or ""
+            if str(content).strip():
+                return str(content)
+            
+            if finish == "length" and attempt < MAX_RETRIES and payload["max_tokens"] < MAX_TOKENS_CAP:
+                bigger = min(payload["max_tokens"] * 3, MAX_TOKENS_CAP)
+                print(f"[hackclub] {model} used all {payload['max_tokens']} tokens before answering "
+                      f"(reasoning model?), retrying with max_tokens={bigger}")
+                payload["max_tokens"] = bigger
+                continue
+
+            if finish != "length":
+                reasoning = msg.get("reasoning_content") or msg.get("reasoning") or ""
+                if str(reasoning).strip():
+                    print("[hackclub] empty content, using reasoning text fallback")
+                    return str(reasoning)
+
+            hint = ""
+            if finish == "length":
+                hint = (" - the model spent its whole token budget thinking; use a non-reasoning model for this step")
+            raise HackClubError(f"model returned an empty response "
+                                f"(HTTP 200, finish_reason={finish}){hint}")
 
         except requests.RequestException as e:
             last_err = e

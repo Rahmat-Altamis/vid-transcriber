@@ -6,13 +6,13 @@
   "groq": {
     "base_url": "https://api.groq.com/openai/v1",
     "whisper_model": "whisper-large-v3",
-    "text_model": "hackclub:openai/gpt-5.5",
-    "judge_fallback_model": "hackclub:xiaomi/mimo-v2.5",
+    "text_model": "hackclub:deepseek/deepseek-v4.1-flash",
+    "judge_fallback_model": "hackclub:deepseek/deepseek-v4.1-flash",
     "judge_threshold": 0.7
   },
   "hackclub": {
     "base_url": "https://ai.hackclub.com/proxy/v1",
-    "vision_model": "hackclub:anthropic/claude-opus-4.8",
+    "vision_model": "hackclub:deepseek/deepseek-v4.1-flash",
     "fallback_base_url": "https://ai.hackclub.com/proxy/v1"
   },
   "pipeline": {
