@@ -16,7 +16,6 @@ so im too lazy to write another readme, so if you use the AppImage please follow
    chmod +x VideoCaptioner-x86_64.AppImage
    ./VideoCaptioner-x86_64.AppImage
    ```
-   if it complains about FUSE, install `libfuse2` (Arch: `sudo pacman -S fuse2`) or run it with `--appimage-extract-and-run`. if Qt complains about `xcb`, install `libxcb-cursor0` (Arch: `xcb-util-cursor`). ffmpeg is already inside, you dont need to install it
 3. **Add your key** before anything else, press the **Config** button (top right), paste your `HACKCLUB_API_KEY`, press save. Groq key is optional, only needed if you use a `groq:` model. you can also change the AI models there, just remember to always press save after you done editing
 4. **Add videos** with **Add videos...**, or just drag and drop files (even folders) into the window. it accepts mp4, mov, mkv, webm, avi, m4v, flv, wmv, mpg, mpeg, 3gp and ts
 5. **Pick styles**, tick the personas you want (all four are ticked by default), then press **Caption videos**
@@ -80,26 +79,6 @@ rate limits: DONT SET IT SO HIGH i know you want to mass produce but this is not
 - `fwc.py` Fireworks client, still under construction (all commented out)
 - `appconfig.py` loads and saves the config, finds the config folder and bundled files
 - `build.sh` builds the AppImage
-
-## Running from source
-
-```bash
-pip install -r requirements.txt
-python qt_app.py                  # or: python qt_app.py clip1.mp4 clip2.mp4
-```
-
-You need `ffmpeg` and `ffprobe` on your PATH, or placed next to the code.
-
-## Building the AppImage
-
-Put static Linux `ffmpeg` and `ffprobe` (x86_64) in the project folder, then run:
-
-```bash
-chmod +x build.sh
-./build.sh
-```
-
-The result is `VideoCaptioner-x86_64.AppImage`. Build it on an older distro (like Ubuntu 22.04) if you want it to run on many distros, because an AppImage built on a very new system may not run on older ones.
 
 ## Notes
 
