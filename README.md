@@ -25,7 +25,7 @@ Where is my config? the app keeps it in `~/.config/VideoCaptioner/config.json` (
 
 ## Why I built this
 
-so you wonder? i build this from beest actually the idea came from my hobby as doom- oops, i mean as youtube creator, at first it for such video grading, but why not make it into this masterpiece?? its beautiful
+so you wonder? i build this from beest actually the idea came from my hobby as doom- oops, i mean as youtube creator, at first it for such video grading, but why not make it into this masterpiece?? its beautiful (its not shipped to beest cuz im really busy at the time and cant ship there cuz of time)
 
 ## How it works
 
